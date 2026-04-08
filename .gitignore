@@ -1,0 +1,35 @@
+# ============================================================
+#  AI Saham Analyzer — Root .gitignore
+#  Protects sensitive files across the entire project
+# ============================================================
+
+# Environment variables (CRITICAL — contains API keys)
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+package-lock.json
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Vercel
+.vercel
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build artifacts
+dist/
+build/
