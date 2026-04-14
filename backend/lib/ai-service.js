@@ -45,7 +45,7 @@ function getClient(customApiKey) {
   if (customApiKey) {
     const customGenAI = new GoogleGenerativeAI(customApiKey);
     const customModel = customGenAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-1.5-flash',
       systemInstruction: SYSTEM_PROMPT,
       generationConfig: {
         temperature: 0.7,
@@ -77,7 +77,7 @@ function getClient(customApiKey) {
     }
     genAI = new GoogleGenerativeAI(apiKey);
     model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-1.5-flash',
       systemInstruction: SYSTEM_PROMPT,
       generationConfig: {
         temperature: 0.7,
