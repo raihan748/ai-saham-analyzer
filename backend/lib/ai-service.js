@@ -36,10 +36,38 @@ let genAI = null;
 let model = null;
 
 /**
- * Initialize the Gemini client (lazy singleton)
+ * Initialize the Gemini client
+ * @param {string} [customApiKey] - Optional custom API key to override the environment variable
  * @returns {{ genAI, model }} initialized client and model
  */
-function getClient() {
+function getClient(customApiKey) {
+  // If a custom API key is provided, always create a fresh instance for this request
+  if (customApiKey) {
+    const customGenAI = new GoogleGenerativeAI(customApiKey);
+    const customModel = customGenAI.getGenerativeModel({
+      model: 'gemini-2.0-flash',
+      systemInstruction: SYSTEM_PROMPT,
+      generationConfig: {
+        temperature: 0.7,
+        topP: 0.9,
+        topK: 40,
+        maxOutputTokens: 1024,
+      },
+      safetySettings: [
+        {
+          category: 'HARM_CATEGORY_HARASSMENT',
+          threshold: 'BLOCK_ONLY_HIGH',
+        },
+        {
+          category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+          threshold: 'BLOCK_ONLY_HIGH',
+        },
+      ],
+    });
+    return { genAI: customGenAI, model: customModel };
+  }
+
+  // Otherwise, use the singleton with environment variable
   if (!model) {
     const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey || apiKey === 'your_gemini_api_key_here') {
@@ -76,10 +104,11 @@ function getClient() {
  * Send a chat message to Gemini and get a response
  * @param {string} userMessage - The user's prompt
  * @param {Array} history - Previous conversation turns [{role, parts}]
+ * @param {string} [customApiKey] - Optional custom API key
  * @returns {Promise<{reply: string, usage: object}>}
  */
-async function chat(userMessage, history = []) {
-  const { model } = getClient();
+async function chat(userMessage, history = [], customApiKey = null) {
+  const { model } = getClient(customApiKey);
 
   // Build chat session with history for multi-turn context
   const chatSession = model.startChat({

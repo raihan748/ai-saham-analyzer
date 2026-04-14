@@ -111,7 +111,7 @@ app.get('/api/health', (_req, res) => {
 app.post('/api/chat', async (req, res) => {
   try {
     // --- Input validation ---
-    const { message, history } = req.body;
+    const { message, history, apiKey } = req.body;
 
     if (!message || typeof message !== 'string') {
       return res.status(400).json({
@@ -149,7 +149,7 @@ app.post('/api/chat', async (req, res) => {
       : [];
 
     // --- Call AI service ---
-    const result = await aiService.chat(trimmed, chatHistory);
+    const result = await aiService.chat(trimmed, chatHistory, apiKey);
 
     return res.json({
       success: true,

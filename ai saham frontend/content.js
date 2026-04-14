@@ -13,7 +13,7 @@
   //  CONFIGURATION
   //  Update API_BASE_URL to your deployed Vercel backend URL
   // ============================================================
-  const API_BASE_URL = 'http://localhost:3001'; // ← Change to your Vercel URL after deployment
+  const API_BASE_URL = 'https://ai-saham-analyzer-54c4.vercel.app'; // ← Change to your Vercel URL after deployment
   const API_CHAT_ENDPOINT = `${API_BASE_URL}/api/chat`;
 
   // ---- Conversation History (for multi-turn context) ----
@@ -31,6 +31,7 @@
     send: `<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`,
     minimize: `<svg viewBox="0 0 24 24"><path d="M19 13H5v-2h14v2z"/></svg>`,
     sparkle: `<svg viewBox="0 0 24 24"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z"/></svg>`,
+    settings: `<svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.56-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.73 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .43-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.49-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>`,
   };
 
   // ---- Market Data ----
@@ -60,12 +61,19 @@
    * @returns {Promise<string>} - The AI's reply text
    */
   async function getAIResponse(userMessage) {
+    // Check for custom API key
+    let customApiKey = null;
+    try {
+      customApiKey = localStorage.getItem('asa_custom_api_key');
+    } catch (e) {}
+
     const response = await fetch(API_CHAT_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         message: userMessage,
         history: conversationHistory.slice(-MAX_HISTORY_TURNS),
+        apiKey: customApiKey || undefined,
       }),
     });
 
@@ -127,6 +135,9 @@
         </div>
       </div>
       <div class="asa-header-actions">
+        <button class="asa-header-btn" id="asa-btn-settings" title="Settings">
+          ${ICONS.settings}
+        </button>
         <button class="asa-header-btn" id="asa-btn-minimize" title="Minimize">
           ${ICONS.minimize}
         </button>
@@ -164,8 +175,26 @@
       <button id="asa-chat-send" title="Kirim">${ICONS.send}</button>
     `;
 
+    // Settings panel
+    const settingsPanel = document.createElement('div');
+    settingsPanel.id = 'asa-settings-panel';
+    settingsPanel.style.display = 'none';
+    settingsPanel.innerHTML = `
+      <div class="asa-settings-title">Settings</div>
+      <div class="asa-settings-group">
+        <label for="asa-api-key-input">Custom Gemini API Key</label>
+        <p class="asa-settings-desc">Masukkan API Key Anda sendiri jika API Key bawaan gagal/limit.</p>
+        <div class="asa-settings-input-group">
+          <input type="password" id="asa-api-key-input" placeholder="AIzi..." />
+          <button id="asa-api-key-save">Simpan</button>
+        </div>
+        <div id="asa-settings-msg"></div>
+      </div>
+    `;
+
     // Assemble
     win.appendChild(header);
+    win.appendChild(settingsPanel);
     win.appendChild(ticker);
     win.appendChild(messages);
     win.appendChild(quickActions);
@@ -317,6 +346,44 @@
     isOpen = false;
     win.classList.remove('asa-open');
     fab.classList.remove('asa-active');
+  });
+
+  // Settings logic
+  const settingsPanel = document.getElementById('asa-settings-panel');
+  const apiKeyInput = document.getElementById('asa-api-key-input');
+  
+  // Load existing key
+  try {
+    const savedKey = localStorage.getItem('asa_custom_api_key');
+    if (savedKey) {
+      apiKeyInput.value = savedKey;
+    }
+  } catch(e) {}
+
+  document.getElementById('asa-btn-settings').addEventListener('click', () => {
+    if (settingsPanel.style.display === 'none') {
+      settingsPanel.style.display = 'block';
+    } else {
+      settingsPanel.style.display = 'none';
+    }
+  });
+
+  document.getElementById('asa-api-key-save').addEventListener('click', () => {
+    const val = apiKeyInput.value.trim();
+    try {
+      if (val) {
+        localStorage.setItem('asa_custom_api_key', val);
+        document.getElementById('asa-settings-msg').textContent = '✅ Tersimpan!';
+      } else {
+        localStorage.removeItem('asa_custom_api_key');
+        document.getElementById('asa-settings-msg').textContent = '✅ Dihapus!';
+      }
+      setTimeout(() => {
+        document.getElementById('asa-settings-msg').textContent = '';
+      }, 3000);
+    } catch(e) {
+      document.getElementById('asa-settings-msg').textContent = '❌ Gagal menyimpan';
+    }
   });
 
   // ---- Send via button or Enter key ----
