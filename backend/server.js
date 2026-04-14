@@ -177,6 +177,20 @@ app.post('/api/chat', async (req, res) => {
       });
     }
 
+    if (error.message.includes('API key not valid') || error.message.includes('API_KEY_INVALID')) {
+      return res.status(401).json({
+        success: false,
+        error: 'API Key tidak valid. Silakan periksa kembali API Key Anda.',
+      });
+    }
+
+    if (error.message.includes('location is not supported')) {
+      return res.status(403).json({
+        success: false,
+        error: 'Akses API Gemini tidak didukung di lokasi Anda saat ini.',
+      });
+    }
+
     if (error.message.includes('SAFETY')) {
       return res.status(400).json({
         success: false,
